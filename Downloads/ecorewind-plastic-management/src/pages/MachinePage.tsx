@@ -312,11 +312,50 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
       const currentFingerprint = `${currentClassification.label}_${weightGrams}_${selectedSource}`;
 
       try {
+        if (mode === "qr") {
+          const kioskDeposit = await api.createKioskDeposit({
+            itemType: currentClassification.label,
+            weightGrams: Math.round(weightGrams),
+            confidence: currentClassification.confidence,
+            idempotencyKey,
+          });
+
+          const creditedRupees = kioskDeposit.amountInr;
+          addLog(
+            `[Kiosk QR] ACCEPTED: ₹${creditedRupees} reserved — scan the QR code to claim`,
+            "success"
+          );
+          setToastNotification(
+            `Accepted! ₹${creditedRupees} reserved. Scan the QR code to claim.`
+          );
+
+          setQrModalSession({
+            token: kioskDeposit.token,
+            claimUrl: kioskDeposit.claimUrl || `/app/claim/${kioskDeposit.token}`,
+            sessionId: kioskDeposit.sessionId,
+            amountInr: creditedRupees,
+            itemType: kioskDeposit.itemType || currentClassification.label,
+            displayLabel: currentClassification.display_label,
+            weightGrams: kioskDeposit.weightGrams ?? weightGrams,
+            expiresAt: kioskDeposit.expiresAt || new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+            status: "pending",
+          });
+
+          setLastAutoCreditInfo({
+            label: currentClassification.display_label,
+            amount: creditedRupees,
+            timestamp: Date.now(),
+          });
+          lastAutoDepositedFingerprintRef.current = currentFingerprint;
+          cooldownUntilRef.current = Date.now() + 3500;
+          return;
+        }
+
         let frameData: Blob | ClassifyResponse = currentClassification;
         if (selectedSource === "live_camera" && stream) {
           const captured = await captureFrame();
           if (captured) frameData = captured;
-        } else if (selectedSource === "upload" && uploadedBlob) {
+        } else if (uploadedBlob) {
           frameData = uploadedBlob;
         }
 
@@ -332,49 +371,19 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
         refreshWallet();
 
         if (res.decision === "accepted") {
-          const creditedRupees = (res.transaction.payout_paise / 100).toFixed(2);
-          const wasCredited = res.credited !== false;
-          if (wasCredited) {
-            const prefix = mode === "auto" ? "⚡ [Zero-Touch Auto-Credit]" : "[Manual Deposit]";
-            addLog(
-              `${prefix} ACCEPTED: +₹${creditedRupees} credited to wallet (${res.display_label})`,
-              "success"
-            );
-            setToastNotification(
-              mode === "auto"
-                ? `⚡ Zero-Touch Auto-Credit: +₹${creditedRupees} directly credited to wallet!`
-                : `Accepted! +₹${creditedRupees} credited to wallet.`
-            );
-          } else {
-            const claimUrl =
-              res.claimUrl || (res.token ? `/app/claim/${res.token}` : null);
-            addLog(
-              `[Kiosk QR] ACCEPTED: ₹${creditedRupees} reserved — scan the QR code to claim`,
-              "success"
-            );
-            setToastNotification(
-              `Accepted! ₹${creditedRupees} reserved. Scan the QR code to claim.`
-            );
-            if (res.token) {
-              setQrModalSession({
-                token: res.token,
-                claimUrl: claimUrl || `/app/claim/${res.token}`,
-                sessionId: res.sessionId || res.scan_id,
-                amountInr: creditedRupees,
-                itemType: res.itemType || res.label,
-                displayLabel: res.display_label,
-                weightGrams: res.weightGrams ?? weightGrams,
-                expiresAt: res.expiresAt || new Date(Date.now() + 5 * 60 * 1000).toISOString(),
-                status: "pending",
-              });
-            }
-          }
+          const creditedRupees = res.transaction?.payout_paise
+            ? (res.transaction.payout_paise / 100).toFixed(2)
+            : payoutRupees;
+          addLog(
+            `[Manual Deposit] ACCEPTED: +₹${creditedRupees} credited to wallet (${res.display_label})`,
+            "success"
+          );
+          setToastNotification(`Accepted! +₹${creditedRupees} credited to wallet.`);
           setLastAutoCreditInfo({
             label: res.display_label,
             amount: creditedRupees,
             timestamp: Date.now(),
           });
-          // Arm cooldown and lock fingerprint to prevent multiple credits of same object
           lastAutoDepositedFingerprintRef.current = currentFingerprint;
           cooldownUntilRef.current = Date.now() + 3500;
         } else {
@@ -447,17 +456,17 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
     return () => clearInterval(timer);
   }, [qrModalSession?.expiresAt, qrModalSession?.status]);
 
-  // --- ZERO-TOUCH AUTOMATION ENGINE (No Human in the Loop) ---
-  // When plastic bag, plastic bottle, or aluminium can is detected with valid weight and confidence:
-  // Automatically credit the amount to the user's wallet without requiring any button click!
+  // --- AUTOMATIC KIOSK QR CODE ENGINE ---
+  // When plastic bottle, aluminium can, or plastic bag is detected with valid weight and confidence:
+  // Automatically open the Kiosk QR code modal after 2.0 seconds of detection!
   useEffect(() => {
-    if (!isAutoCreditEnabled || isInserting || isDepositingRef.current) {
+    if (!isAutoCreditEnabled || isInserting || isDepositingRef.current || qrModalSession) {
       setAutoCreditCountdown(null);
       return;
     }
 
     // If classification is other_invalid or not payable, reset lock once cooldown passes
-    if (!isPayable || currentClassification.label === "other_invalid") {
+    if (!isPayable || currentClassification.label === "other_invalid" || currentClassification.confidence < 0.75) {
       if (Date.now() > cooldownUntilRef.current) {
         lastAutoDepositedFingerprintRef.current = "";
       }
@@ -467,7 +476,7 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
 
     const currentFingerprint = `${currentClassification.label}_${weightGrams}_${selectedSource}`;
 
-    // If this item was already credited or cooldown is active, hold off
+    // If this item was already processed or cooldown is active, hold off
     if (
       lastAutoDepositedFingerprintRef.current === currentFingerprint ||
       Date.now() < cooldownUntilRef.current
@@ -476,19 +485,33 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
       return;
     }
 
-    // Optical stabilization lock: count down 1.0 second, then auto-credit!
-    setAutoCreditCountdown(1.0);
-    const timer = setTimeout(() => {
-      executeDeposit("auto");
+    // Start 2-second countdown for optical stabilization, then open Kiosk QR code
+    setAutoCreditCountdown(2);
+
+    const countdownInterval = setInterval(() => {
+      setAutoCreditCountdown((prev) => {
+        if (prev === null || prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
     }, 1000);
 
+    const timer = setTimeout(() => {
+      setAutoCreditCountdown(null);
+      executeDeposit("qr");
+    }, 2000);
+
     return () => {
+      clearInterval(countdownInterval);
       clearTimeout(timer);
     };
   }, [
     isPayable,
     isAutoCreditEnabled,
     isInserting,
+    qrModalSession,
     currentClassification.label,
     currentClassification.confidence,
     weightGrams,
@@ -508,28 +531,28 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
           </div>
 
           <div className="flex items-center gap-2">
-            {/* Zero-Touch Automation Toggle */}
+            {/* Kiosk Auto-QR Scanner Toggle */}
             <button
               type="button"
               onClick={() => {
                 const next = !isAutoCreditEnabled;
                 setIsAutoCreditEnabled(next);
-                addLog(`⚡ Zero-Touch Auto-Credit switched ${next ? "ON" : "OFF"}.`, "info");
+                addLog(`⚡ Auto-QR Scanner switched ${next ? "ON" : "OFF"}.`, "info");
               }}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                 isAutoCreditEnabled
                   ? "bg-[#E5F0EA] border-[#1F5C45] text-[#12372A] shadow-xs"
                   : "bg-white border-[#E5E6E1] text-[#5B655F] hover:text-[#1C2321]"
               }`}
-              title="When enabled, accepted bottles, cans, and bags are instantly credited without human in loop"
+              title="When enabled, detecting an accepted item automatically opens the Kiosk QR Code after 2 seconds"
             >
-              <Zap
+              <QrCode
                 className={`w-3.5 h-3.5 ${
-                  isAutoCreditEnabled ? "text-[#1F5C45] fill-[#1F5C45]" : "text-[#5B655F]"
+                  isAutoCreditEnabled ? "text-[#1F5C45]" : "text-[#5B655F]"
                 }`}
               />
               <span>
-                Auto-Credit: <strong>{isAutoCreditEnabled ? "ON (Zero-Touch)" : "OFF"}</strong>
+                Auto-QR (2s): <strong>{isAutoCreditEnabled ? "ON" : "OFF"}</strong>
               </span>
             </button>
 
@@ -692,13 +715,13 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
                   <div className="absolute top-14 inset-x-4 sm:inset-x-8 z-30 flex flex-col items-center justify-center p-3 rounded-xl bg-black/90 backdrop-blur-md border border-[#34D399] shadow-xl text-center animate-in fade-in zoom-in-95">
                     <div className="flex items-center gap-2 text-[#34D399] text-xs font-bold tracking-wider uppercase">
                       <Zap className="w-4 h-4 fill-[#34D399] animate-pulse" />
-                      <span>Zero-Touch Auto-Crediting in 1s</span>
+                      <span>Zero-Touch Auto-Crediting in 2s</span>
                     </div>
                     <p className="text-white text-xs mt-1">
                       Detected <strong className="text-emerald-300">{currentClassification.display_label}</strong> &bull; Crediting ₹{payoutRupees} directly without human in loop
                     </p>
                     <div className="w-full bg-gray-700 h-1.5 rounded-full mt-2.5 overflow-hidden">
-                      <div className="bg-[#34D399] h-full transition-all duration-1000 ease-linear" style={{ width: "100%" }} />
+                      <div className="bg-[#34D399] h-full transition-all duration-2000 ease-linear" style={{ width: "100%" }} />
                     </div>
                   </div>
                 )}
@@ -1009,41 +1032,47 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
                 </p>
               </div>
 
-              {/* Action Button: Zero-Touch Auto-Credit Status or Manual Deposit */}
+              {/* Action Button: Auto-QR Countdown Status or Manual QR Open */}
               <button
                 type="button"
                 disabled={isInserting}
-                onClick={() => executeDeposit("manual")}
-                className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer ${
+                onClick={() => executeDeposit(isPayable ? "qr" : "manual")}
+                className={`w-full py-3.5 px-4 rounded-xl text-sm font-semibold transition-all duration-150 flex items-center justify-center gap-2 cursor-pointer relative overflow-hidden ${
                   isPayable
                     ? "bg-[#1F5C45] hover:bg-[#12372A] text-white shadow-sm"
                     : "bg-white hover:bg-[#FFF5F5] text-[#E53E3E] border-2 border-[#E53E3E]"
                 }`}
               >
+                {/* 2-second countdown indicator */}
+                {isPayable && isAutoCreditEnabled && autoCreditCountdown !== null && (
+                  <div
+                    className="absolute bottom-0 left-0 h-1.5 bg-[#34D399] transition-all duration-1000 ease-linear"
+                    style={{
+                      width: `${Math.max(15, ((3 - autoCreditCountdown) / 2) * 100)}%`,
+                    }}
+                  />
+                )}
+
                 {isInserting ? (
                   <span className="flex items-center gap-2">
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                    <span>{isAutoCreditEnabled ? "⚡ Auto-Crediting to wallet..." : "Checking container in chamber..."}</span>
+                    <span>Opening Kiosk QR Claim Code...</span>
                   </span>
                 ) : isPayable ? (
-                  isAutoCreditEnabled ? (
-                    <span className="flex items-center gap-1.5">
-                      <Zap className="w-4 h-4 fill-white" />
-                      <span>
-                        {autoCreditCountdown !== null
-                          ? `⚡ Auto-Crediting ₹${payoutRupees} in 1s (or click now)`
-                          : `⚡ Auto-Credit Active: ₹${payoutRupees} (Direct Payout)`}
-                      </span>
+                  <span className="flex items-center gap-2">
+                    <QrCode className="w-4 h-4 text-[#34D399]" />
+                    <span>
+                      {autoCreditCountdown !== null
+                        ? `⚡ Opening Kiosk QR in ${autoCreditCountdown}s (or click now)`
+                        : `Generate Kiosk QR Code (Scan with Phone)`}
                     </span>
-                  ) : (
-                    <span>Insert &amp; get ₹{payoutRupees}</span>
-                  )
+                  </span>
                 ) : (
-                  <span>Insert anyway (no payout)</span>
+                  <span>Item Rejected (No Payout)</span>
                 )}
               </button>
 
-              {/* Secondary Action: Generate Kiosk QR for Mobile Scanning */}
+              {/* Secondary Action: Immediate Manual QR Code Trigger */}
               {isPayable && (
                 <button
                   type="button"
@@ -1058,8 +1087,8 @@ export const MachinePage: React.FC<MachinePageProps> = ({ onNavigateWallet }) =>
 
               {isAutoCreditEnabled && (
                 <p className="text-[11px] text-center text-[#1F5C45] font-medium flex items-center justify-center gap-1.5 bg-[#E5F0EA] p-2.5 rounded-xl border border-[#1F5C45]/20">
-                  <Zap className="w-3.5 h-3.5 fill-[#1F5C45] shrink-0" />
-                  <span>Zero-Touch Auto-Credit is active: funds are directly credited to wallet without human in loop.</span>
+                  <QrCode className="w-3.5 h-3.5 text-[#1F5C45] shrink-0" />
+                  <span>Auto-QR Scanner active: Kiosk QR code opens automatically after 2s of object detection.</span>
                 </p>
               )}
             </div>

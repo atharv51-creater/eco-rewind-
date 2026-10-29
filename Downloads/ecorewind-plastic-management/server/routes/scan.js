@@ -152,7 +152,12 @@ export async function handleScan(req, res) {
   const machineId = result?.machine_id || KIOSK_NAME;
   const imageSha = result?.image_sha256 || null;
   const scores = result?.scores || {};
-  const userId = req.user?.userId || null;
+  const isAnonymousMode =
+    req.body?.anonymous === 'true' ||
+    req.body?.mode === 'qr' ||
+    req.body?.user_id === 'anonymous' ||
+    req.headers['x-kiosk-anonymous'] === 'true';
+  const userId = isAnonymousMode ? null : (req.user?.userId || null);
 
   // Replay a previous result for the same physical scan attempt.
   const existing = findByIdempotency(db, machineId, idempotencyKey);

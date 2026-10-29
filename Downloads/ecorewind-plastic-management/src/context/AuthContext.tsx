@@ -42,10 +42,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Sync token to API central headers
+  // Sync token to API central headers and verify session via getMe
   useEffect(() => {
+    let isMounted = true;
     api.setAuthToken(token);
-    setIsLoading(false);
+    api
+      .getMe()
+      .then((res) => {
+        if (isMounted && res?.user) {
+          setUser(res.user);
+        }
+      })
+      .catch(() => {
+        // Not logged in or session expired
+      })
+      .finally(() => {
+        if (isMounted) setIsLoading(false);
+      });
+    return () => {
+      isMounted = false;
+    };
   }, [token]);
 
   // Global 401 handler listener
@@ -84,6 +100,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = useCallback(() => {
+    api.logout();
     setToken(null);
     setUser(null);
     api.setAuthToken(null);

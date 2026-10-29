@@ -5,13 +5,18 @@ export const ENDPOINTS = {
   // Auth
   AUTH_LOGIN: `${API_BASE_URL}/auth/login`,
   AUTH_REGISTER: `${API_BASE_URL}/auth/register`,
-  USERS_ME: `${API_BASE_URL}/users/me`,
+  AUTH_LOGOUT: `${API_BASE_URL}/auth/logout`,
+  USERS_ME: `${API_BASE_URL}/me`,
 
   // Public / Machine Kiosk
   HEALTH: `${API_BASE_URL}/health`,
   RATES: `${API_BASE_URL}/rates`,
   CLASSIFY: `${API_BASE_URL}/classify`,
   SCAN: `${API_BASE_URL}/scan`,
+  KIOSK_DEPOSIT: `${API_BASE_URL}/kiosk/deposit`,
+  CLAIM: (token: string) => `${API_BASE_URL}/claim/${encodeURIComponent(token)}`,
+  DEPOSIT_STATUS: (sessionId: string) => `${API_BASE_URL}/deposit/${encodeURIComponent(sessionId)}/status`,
+  QR_IMAGE: (text: string) => `${API_BASE_URL}/qr?text=${encodeURIComponent(text)}`,
 
   // User & Wallet
   WALLET: (userId: string) => `${API_BASE_URL}/users/${encodeURIComponent(userId)}/wallet`,

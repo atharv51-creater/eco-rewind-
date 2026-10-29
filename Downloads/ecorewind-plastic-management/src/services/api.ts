@@ -51,6 +51,7 @@ async function fetchWithTimeout(
   try {
     const response = await fetch(url, {
       ...options,
+      credentials: options.credentials || "include",
       headers,
       signal: controller.signal,
     });
@@ -89,7 +90,7 @@ export const api = {
       const res = await fetchWithTimeout(ENDPOINTS.AUTH_LOGIN, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password: pass }),
+        body: JSON.stringify({ identifier: email, email, password: pass }),
       });
       if (!res.ok) throw await parseErrorResponse(res);
       const data = await res.json();
@@ -130,17 +131,105 @@ export const api = {
     }
   },
 
-  async getMe(userId: string): Promise<{ user: AuthUser; wallet: Wallet }> {
+  async logout(): Promise<void> {
+    try {
+      await fetchWithTimeout(ENDPOINTS.AUTH_LOGOUT, { method: "POST" }, 5000);
+    } catch {
+      // Ignore
+    }
+  },
+
+  async getMe(userId?: string): Promise<{ user: AuthUser; wallet: Wallet; [key: string]: any }> {
     if (!isLiveMode) {
-      return mockClient.getMe(userId);
+      return mockClient.getMe(userId || "");
     }
     try {
       const res = await fetchWithTimeout(ENDPOINTS.USERS_ME, {}, 8000);
       if (!res.ok) throw await parseErrorResponse(res);
-      return await res.json();
+      const data = await res.json();
+      return {
+        ...data,
+        user: data.user || {
+          id: data.userId,
+          name: data.name || "Recycler",
+          phone: data.phone || data.userId,
+          email: data.email || "",
+          role: data.role || "user",
+        },
+        wallet: data.wallet || {
+          user_id: data.userId,
+          balance_paise: data.balancePaise ?? 0,
+          total_paid_paise: data.lifetimeEarnedPaise ?? 0,
+          total_grams: Math.round((data.kgRecycled ?? 0) * 1000),
+          accepted_count: (data.bottleCount ?? 0) + (data.canCount ?? 0) + (data.bagCount ?? 0),
+          rejected_count: 0,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        },
+      };
     } catch (err) {
       rethrowLive(err, "PROFILE_UNAVAILABLE", "Profile service unavailable");
     }
+  },
+
+  // --- CLAIM & DEPOSIT STATUS ---
+  async getClaimDetails(token: string) {
+    const res = await fetchWithTimeout(ENDPOINTS.CLAIM(token), {}, 8000);
+    if (!res.ok) throw await parseErrorResponse(res);
+    return await res.json();
+  },
+
+  async claimDeposit(token: string) {
+    const res = await fetchWithTimeout(
+      ENDPOINTS.CLAIM(token),
+      {
+        method: "POST",
+      },
+      12000
+    );
+    if (!res.ok) throw await parseErrorResponse(res);
+    return await res.json();
+  },
+
+  async getDepositStatus(sessionId: string) {
+    const res = await fetchWithTimeout(ENDPOINTS.DEPOSIT_STATUS(sessionId), {}, 8000);
+    if (!res.ok) throw await parseErrorResponse(res);
+    return await res.json();
+  },
+
+  async createKioskDeposit(params: {
+    itemType: string;
+    weightGrams: number;
+    confidence?: number;
+    idempotencyKey?: string;
+  }): Promise<{
+    sessionId: string;
+    token: string;
+    claimUrl: string;
+    claimPath: string;
+    amountPaise: number;
+    amountInr: string;
+    itemType: string;
+    weightGrams: number;
+    expiresAt: string;
+    status: string;
+    duplicate?: boolean;
+  }> {
+    const res = await fetchWithTimeout(
+      ENDPOINTS.KIOSK_DEPOSIT,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Kiosk-Key": "rvm-key-2024",
+          ...(params.idempotencyKey ? { "Idempotency-Key": params.idempotencyKey } : {}),
+        },
+        body: JSON.stringify(params),
+      },
+      10000
+    );
+    if (!res.ok) throw await parseErrorResponse(res);
+    return await res.json();
   },
 
   // --- HEALTH & RATES ---
@@ -257,14 +346,23 @@ export const api = {
       formData.append("user_id", userId);
       formData.append("weight_grams", weightGrams.toString());
       formData.append("machine_id", machineId);
+      if (userId === "anonymous") {
+        formData.append("anonymous", "true");
+        formData.append("mode", "qr");
+      }
+
+      const headers: Record<string, string> = {
+        "Idempotency-Key": idempotencyKey,
+      };
+      if (userId === "anonymous") {
+        headers["X-Kiosk-Anonymous"] = "true";
+      }
 
       const res = await fetchWithTimeout(
         ENDPOINTS.SCAN,
         {
           method: "POST",
-          headers: {
-            "Idempotency-Key": idempotencyKey,
-          },
+          headers,
           body: formData,
         },
         20000

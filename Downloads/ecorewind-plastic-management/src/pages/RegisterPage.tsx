@@ -20,6 +20,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
   const [confirmPassword, setConfirmPassword] = useState<string>("");
   const [upiId, setUpiId] = useState<string>("");
 
+  // Check if a QR claim token is passed via query params or localStorage
+  const [claimToken] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token") || params.get("claim") || localStorage.getItem("pending_claim_token");
+    } catch {
+      return null;
+    }
+  });
+
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
   const [apiError, setApiError] = useState<string | null>(null);
@@ -49,8 +59,8 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
 
     if (!password) {
       newErrors.password = "Password is required.";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters.";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters.";
     }
 
     if (password !== confirmPassword) {
@@ -79,6 +89,15 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         password,
         upi_id: upiId || undefined,
       });
+      if (claimToken) {
+        try {
+          localStorage.removeItem("pending_claim_token");
+        } catch {
+          // ignore
+        }
+        window.location.href = `/app/claim/${claimToken}`;
+        return;
+      }
       onNavigate("dashboard");
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Registration failed.";
@@ -107,6 +126,16 @@ export const RegisterPage: React.FC<RegisterPageProps> = ({ onNavigate }) => {
         {/* Registration Card */}
         <Card className="p-6 border border-[#E5E6E1] shadow-xs">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {claimToken && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 animate-pulse" />
+                <div>
+                  <span className="font-semibold block text-emerald-900">Pending Deposit Claim Active</span>
+                  <span>Create your account to credit your reverse vending reward to your new wallet.</span>
+                </div>
+              </div>
+            )}
+
             {apiError && (
               <div className="p-3 bg-[#FBEAE7] border border-[#B9402B]/30 rounded-xl text-xs text-[#B9402B] flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />

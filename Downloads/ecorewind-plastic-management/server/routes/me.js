@@ -1,6 +1,7 @@
 import { getDb } from '../db.js';
 import { getWallet } from '../wallet.js';
 import { formatInr } from '../utils.js';
+import { isAdmin } from '../middleware/auth.js';
 
 const LABELS = {
   plastic_bottle: 'Plastic bottle',
@@ -45,6 +46,8 @@ export function getMe(req, res) {
   const db = getDb();
 
   const wallet = getWallet(userId);
+  const userRow = db.prepare('SELECT id, name, phone, email, created_at FROM users WHERE id = ?').get(userId);
+  const role = req.user.role || (userRow && isAdmin({ phone: userRow.phone }) ? 'admin' : 'user');
 
   const statsRow = db
     .prepare(
@@ -79,6 +82,18 @@ export function getMe(req, res) {
 
   res.json({
     userId,
+    user: userRow
+      ? {
+          id: userRow.id,
+          name: userRow.name,
+          phone: userRow.phone,
+          email: userRow.email || '',
+          role,
+          created_at: userRow.created_at,
+        }
+      : null,
+    role,
+    wallet,
     balancePaise: wallet.balance_paise,
     balanceInr: formatInr(wallet.balance_paise),
     availablePaise: wallet.balance_paise,

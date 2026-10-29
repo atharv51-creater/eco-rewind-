@@ -216,8 +216,8 @@ export function createApp({ startMl = false } = {}) {
   app.post(['/api/scan', '/scan'], optionalAuthMiddleware, handleScan);
   app.get('/api/claim/:token', getClaimDetails);
   app.post('/api/claim/:token', authMiddleware, claimDeposit);
-  app.get('/api/me', authMiddleware, getMe);
-  app.get('/api/me/transactions', authMiddleware, getTransactions);
+  app.get(['/api/me', '/api/users/me'], authMiddleware, getMe);
+  app.get(['/api/me/transactions', '/api/users/me/transactions'], authMiddleware, getTransactions);
 
   // --- ML inference proxy (read-only) ---
   app.get(['/api/model-info', '/model-info'], (req, res) => forwardToMl(req, res, '/api/model-info'));

@@ -68,7 +68,7 @@ export const ADMIN_PHONES = (env.ADMIN_PHONES || '9811122233')
   .filter(Boolean);
 
 // Reward lifecycle
-export const TOKEN_TTL_MINUTES = intEnv('TOKEN_TTL_MINUTES', 5);
+export const TOKEN_TTL_MINUTES = intEnv('TOKEN_TTL_MINUTES', 10);
 export const MIN_WITHDRAWAL_PAISE = intEnv('MIN_WITHDRAWAL_PAISE', 100);
 
 // ML inference service (Python/Keras). Node never trusts its ledger.

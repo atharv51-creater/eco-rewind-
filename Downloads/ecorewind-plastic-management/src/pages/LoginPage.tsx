@@ -15,11 +15,21 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
   const { login } = useAuth();
   const [role, setRole] = useState<UserRole>(initialRole);
   const [email, setEmail] = useState<string>(initialRole === "admin" ? "admin@ecorewind.com" : "user@ecorewind.com");
-  const [password, setPassword] = useState<string>(initialRole === "admin" ? "admin123" : "user123");
+  const [password, setPassword] = useState<string>("password123");
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [rememberMe, setRememberMe] = useState<boolean>(true);
   const [loading, setLoading] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if a QR claim token is passed via query params or localStorage
+  const [claimToken] = useState<string | null>(() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("token") || params.get("claim") || localStorage.getItem("pending_claim_token");
+    } catch {
+      return null;
+    }
+  });
 
   // Field validation states
   const [emailError, setEmailError] = useState<string | null>(null);
@@ -30,10 +40,10 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
     setError(null);
     if (newRole === "admin") {
       setEmail("admin@ecorewind.com");
-      setPassword("admin123");
+      setPassword("password123");
     } else {
       setEmail("user@ecorewind.com");
-      setPassword("user123");
+      setPassword("password123");
     }
   };
 
@@ -70,6 +80,15 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
     try {
       setLoading(true);
       const res = await login(email, password, role);
+      if (claimToken && res.role !== "admin") {
+        try {
+          localStorage.removeItem("pending_claim_token");
+        } catch {
+          // ignore
+        }
+        window.location.href = `/app/claim/${claimToken}`;
+        return;
+      }
       if (res.role === "admin") {
         onNavigate("admin");
       } else {
@@ -133,6 +152,16 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
         {/* Login Form Card */}
         <Card className="p-6 border border-[#E5E6E1] shadow-xs">
           <form onSubmit={handleSubmit} className="space-y-4">
+            {claimToken && (
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-800 flex items-start gap-2.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0 animate-pulse" />
+                <div>
+                  <span className="font-semibold block text-emerald-900">Pending Deposit Claim Active</span>
+                  <span>Sign in to credit your reverse vending reward to your eco-wallet.</span>
+                </div>
+              </div>
+            )}
+
             {error && (
               <div className="p-3 bg-[#FBEAE7] border border-[#B9402B]/30 rounded-xl text-xs text-[#B9402B] flex items-start gap-2">
                 <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
@@ -182,7 +211,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
               </label>
 
               <span className="text-[#5B655F] text-[11px] font-mono">
-                {role === "admin" ? "admin123" : "user123"}
+                password123
               </span>
             </div>
 
@@ -200,14 +229,14 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
 
           {/* Quick Demo Credentials Assistant */}
           <div className="mt-5 pt-4 border-t border-[#E5E6E1] text-center">
-            <span className="text-[11px] text-[#5B655F] block mb-2 font-mono">Quick Demo Sign-In:</span>
+            <span className="text-[11px] text-[#5B655F] block mb-2 font-mono">Quick Demo Sign-In (DB Seeded):</span>
             <div className="flex gap-2">
               <button
                 type="button"
                 onClick={() => {
                   setRole("user");
                   setEmail("user@ecorewind.com");
-                  setPassword("user123");
+                  setPassword("password123");
                 }}
                 className="flex-1 py-1.5 px-2 text-[11px] font-mono rounded-lg border border-[#E5E6E1] bg-[#F6F6F3] hover:bg-gray-100 text-[#12372A]"
               >
@@ -218,7 +247,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({ initialRole = "user", onNa
                 onClick={() => {
                   setRole("admin");
                   setEmail("admin@ecorewind.com");
-                  setPassword("admin123");
+                  setPassword("password123");
                 }}
                 className="flex-1 py-1.5 px-2 text-[11px] font-mono rounded-lg border border-[#E5E6E1] bg-[#F6F6F3] hover:bg-gray-100 text-[#12372A]"
               >
