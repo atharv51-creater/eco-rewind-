@@ -1,0 +1,5 @@
+{
+  "name": "EcoRewind - Reverse Vending Machine & Plastic Management",
+  "description": "Reverse vending machine simulation and eco-wallet web app for recycling plastic bottles, aluminium cans, and bags with instant UPI rewards.",
+  "capabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoRewind - Claim</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal-50: #f0f9f7;
+      --teal-100: #e0f7f1;
+      --teal-600: #0d9488;
+      --teal-700: #0f766e;
+      --gold-50: #fffbeb;
+      --gold-100: #fef3c7;
+      --gold-600: #d97706;
+      --gray-50: #f9fafb;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+      --indigo-600: #6366f1;
+      --red-500: #ef4444;
+      --green-500: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--gray-50);
+      color: var(--gray-800);
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--gray-600);
+      font-size: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--teal-600);
+    }
+
+    .form-group.input-error input {
+      border-color: var(--red-500);
+    }
+
+    .error-text {
+      color: var(--red-500);
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: var(--teal-600);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn:focus:not(:focus-visible) { outline: none; }
+
+    .btn:focus-visible { outline: 2px solid var(--gold-600); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .links {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .links a {
+      color: var(--teal-600);
+      text-decoration: none;
+      font-size: 14px;
+      margin: 0 4px;
+    }
+
+    .links a:hover { text-decoration: underline; }
+
+    .policy {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--gray-200);
+      font-size: 12px;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    .status-good {
+      background: var(--gold-50);
+      border: 1px solid var(--gold-200);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+
+    .status-bad {
+      background: var(--red-50);
+      border: 1px solid var(--red-200);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+    }
+
+    .token-display {
+      background: var(--gray-100);
+      border-radius: 8px;
+      padding: 12px;
+      margin: 12px 0;
+      font-family: monospace;
+      font-size: 14px;
+      color: var(--gray-600);
+      word-break: break-all;
+    }
+
+    .success-claim {
+      background: var(--gold-50);
+      border: 1px solid var(--gold-200);
+      border-radius: 16px;
+      padding: 24px;
+      text-align: center;
+      display: none;
+    }
+
+    .success-claim.visible { display: block; }
+
+    .success-claim .amount {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      color: var(--gold-600);
+      margin-bottom: 8px;
+    }
+
+    .success-claim .currency {
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+
+    .success-claim .btn {
+      margin-top: 16px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Claim Your Deposit</h1>
+      <p>Enter your token to claim the refund</p>
+    </div>
+    
+    <div class="card hint" id="hintCard">
+      We'll automatically redirect you to register or login if needed, then return here to claim your money.
+    </div>
+    
+    <div class="card" id="authCard">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="phone">Mobile Number</label>
+          <input type="tel" id="phone" placeholder="9876543210" pattern="[0-9]{10}" required>
+          <div class="error-text" id="phoneError">Please enter your 10-digit mobile number</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required>
+          <div class="error-text" id="passwordError">Enter your password</div>
+        </div>
+        
+        <button type="submit" class="btn">Log in</button>
+      </form>
+    </div>
+    
+    <div class="status-good" id="alreadyClaimed" style="display: none;">
+      <strong>Already Claimed!</strong> This deposit has already been claimed.
+    </div>
+    
+    <div class="status-bad" id="expiredError" style="display: none;">
+      <strong>Expired!</strong> This deposit session has expired.
+    </div>
+    
+    <div class="status-bad" id="invalidError" style="display: none;">
+      <strong>Invalid Token!</strong> This deposit token is not valid.
+    </div>
+    
+    <div class="token-display" id="tokenDisplay" style="display: none;"></div>
+    
+    <div class="success-claim" id="successClaim">
+      <div class="amount" id="claimAmount">₹0.00</div>
+      <div class="currency">credited</div>
+      <button class="btn" id="goDashboard">Go to Dashboard</button>
+    </div>
+    
+    <div class="policy">
+      Token is valid for 5 minutes from the time of deposit.
+    </div>
+  </div>
+
+  <script>
+    // Parse token from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token');
+    
+    const hintCard = document.getElementById('hintCard');
+    const authCard = document.getElementById('authCard');
+    const loginForm = document.getElementById('loginForm');
+    const phoneError = document.getElementById('phoneError');
+    const passwordError = document.getElementById('passwordError');
+    const alreadyClaimed = document.getElementById('alreadyClaimed');
+    const expiredError = document.getElementById('expiredError');
+    const invalidError = document.getElementById('invalidError');
+    const tokenDisplay = document.getElementById('tokenDisplay');
+    const successClaim = document.getElementById('successClaim');
+    const claimAmount = document.getElementById('claimAmount');
+    const goDashboard = document.getElementById('goDashboard');
+    
+    // Show token
+    if (token) {
+      tokenDisplay.style.display = 'block';
+      tokenDisplay.textContent = token;
+    }
+    
+    // Check if user is already logged in (has session cookie)
+    async function checkAuthStatus() {
+      const response = await fetch('/api/me', {
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // User is logged in, proceed to claim
+        proceedWithClaim();
+        return true;
+      }
+      return false;
+    }
+    
+    async function proceedWithClaim() {
+      if (!token) return;
+      
+      // Call POST /api/claim/:token
+      const response = await fetch(`/api/claim/${token}`, {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      // Hide all status messages
+      alreadyClaimed.style.display = 'none';
+      expiredError.style.display = 'none';
+      invalidError.style.display = 'none';
+      successClaim.style.display = 'none';
+      authCard.style.display = 'none';
+      hintCard.style.display = 'none';
+      tokenDisplay.style.display = 'none';
+      
+      if (response.ok) {
+        // Show success
+        claimAmount.textContent = `₹${data.amountInr || (data.amountPaise / 100).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        successClaim.classList.add('visible');
+        
+        goDashboard.onclick = () => {
+          window.location.href = '/app/dashboard.html';
+        };
+      } else if (data.error === 'already_claimed') {
+        alreadyClaimed.style.display = 'block';
+      } else if (data.error === 'expired') {
+        expiredError.style.display = 'block';
+      } else if (data.error === 'invalid_token') {
+        invalidError.style.display = 'block';
+      } else {
+        invalidError.style.display = 'block';
+      }
+    }
+    
+    // Login form submission
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Reset errors
+      phoneError.style.display = 'none';
+      passwordError.style.display = 'none';
+      
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      if (!phone || !/^\d{10}$/.test(phone)) {
+        phoneError.style.display = 'block';
+        return;
+      }
+      
+      if (!password) {
+        passwordError.style.display = 'block';
+        return;
+      }
+      
+      // Login
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password }),
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        showSuccess('Logged in!');
+        setTimeout(() => {
+          proceedWithClaim();
+        }, 1000);
+      } else {
+        alert(data.error || 'Login failed');
+      }
+    });
+    
+    function showSuccess(message) {
+      const msg = document.getElementById('successMsg');
+      msg.querySelector('p').textContent = message;
+      msg.classList.add('visible');
+    }
+    
+    // Initialize - check auth status
+    (async () => {
+      // If we have a token and user is logged in, proceed
+      // If we have a token but user is not logged in, show login form
+      // If no token, show error
+      
+      if (!token) {
+        // No token - this shouldn't happen in normal flow
+        invalidError.style.display = 'block';
+        invalidError.querySelector('strong').textContent = 'Missing token';
+        return;
+      }
+      
+      const isLoggedIn = await checkAuthStatus();
+      if (isLoggedIn) {
+        proceedWithClaim();
+      }
+    })();
+  </script>
+</body>
+</html>

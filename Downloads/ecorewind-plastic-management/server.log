@@ -1,0 +1,4 @@
+Cleanup: 0 sessions marked as expired
+EcoRewind server running on http://localhost:3000
+Kiosk: http://localhost:3000/kiosk
+App:   http://localhost:3000/app

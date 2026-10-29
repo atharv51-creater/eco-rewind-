@@ -1,0 +1,16 @@
+.venv/
+venv/
+node_modules/
+__pycache__/
+*.pyc
+.env
+.DS_Store
+data/raw/
+data/dataset/
+outputs/*.keras
+outputs/tfjs_model/
+*.zip
+dist/
+database/*.db
+database/*.db-wal
+database/*.db-shm

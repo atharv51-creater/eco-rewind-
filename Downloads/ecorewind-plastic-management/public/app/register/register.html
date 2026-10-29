@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoRewind - Register</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal-50: #f0f9f7;
+      --teal-100: #e0f7f1;
+      --teal-600: #0d9488;
+      --teal-700: #0f766e;
+      --gold-50: #fffbeb;
+      --gold-100: #fef3c7;
+      --gold-600: #d97706;
+      --gray-50: #f9fafb;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+      --indigo-600: #6366f1;
+      --red-500: #ef4444;
+      --green-500: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--gray-50);
+      color: var(--gray-800);
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--gray-600);
+      font-size: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--teal-600);
+    }
+
+    .form-group.input-error input {
+      border-color: var(--red-500);
+    }
+
+    .error-text {
+      color: var(--red-500);
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: var(--teal-600);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn:focus:not(:focus-visible) { outline: none; }
+
+    .btn:focus-visible { outline: 2px solid var(--gold-600); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn-secondary {
+      background: var(--gray-200);
+      color: var(--gray-800);
+    }
+
+    .links {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .links a {
+      color: var(--teal-600);
+      text-decoration: none;
+      font-size: 14px;
+      margin: 0 4px;
+    }
+
+    .links a:hover { text-decoration: underline; }
+
+    .policy {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--gray-200);
+      font-size: 12px;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    .success-msg {
+      background: var(--gold-50);
+      border: 1px solid var(--gold-200);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .success-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Create Account</h1>
+      <p>Join EcoRewind and start earning</p>
+    </div>
+    
+    <div class="card" id="registerCard">
+      <form id="registerForm">
+        <div class="form-group">
+          <label for="name">Full Name</label>
+          <input type="text" id="name" placeholder="Enter your full name" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="phone">Mobile Number (10 digits)</label>
+          <input type="tel" id="phone" placeholder="9876543210" pattern="[0-9]{10}" required>
+          <div class="error-text" id="phoneError">Please enter a valid 10-digit Indian mobile number</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Minimum 8 characters" required>
+          <div class="error-text" id="passwordError">Password must be at least 8 characters</div>
+        </div>
+        
+        <button type="submit" class="btn">Register</button>
+      </form>
+    </div>
+    <div class="success-msg" id="claimBanner" style="display: none; background: #e0f2fe; border: 1px solid #7dd3fc; color: #0369a1;">
+      🪙 You have a pending recycling reward waiting! Register to credit your wallet.
+    </div>
+
+    <div class="success-msg" id="successMsg">
+      Account created! Logging you in...
+    </div>
+    
+    <div class="links">
+      <a id="loginLink" href="/app/login.html">Already have an account? Log in</a>
+    </div>
+    
+    <div class="policy">
+      By registering, you agree to our terms and privacy policy.
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('registerForm');
+    const phoneError = document.getElementById('phoneError');
+    const passwordError = document.getElementById('passwordError');
+    const claimBanner = document.getElementById('claimBanner');
+    const loginLink = document.getElementById('loginLink');
+
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('token') || (urlParams.get('redirect')?.match(/claim[/.]([a-f0-9]+)/i)?.[1]);
+
+    if (token) {
+      claimBanner.style.display = 'block';
+      loginLink.href = `/app/login.html?token=${encodeURIComponent(token)}`;
+    }
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Reset errors
+      phoneError.style.display = 'none';
+      passwordError.style.display = 'none';
+      
+      const name = document.getElementById('name').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      let valid = true;
+      
+      if (!name) {
+        alert('Please enter your full name');
+        return;
+      }
+      
+      // Validate phone (10 digits)
+      if (!/^\d{10}$/.test(phone)) {
+        phoneError.style.display = 'block';
+        valid = false;
+      }
+      
+      // Validate password
+      if (password.length < 8) {
+        passwordError.style.display = 'block';
+        valid = false;
+      }
+      
+      if (!valid) return;
+      
+      // Send to server
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, phone, password }),
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        showSuccess('Account created successfully! Logging you in...');
+        setTimeout(() => {
+          if (token) {
+            window.location.href = `/app/claim/${token}`;
+          } else {
+            window.location.href = '/app/dashboard.html';
+          }
+        }, 800);
+      } else {
+        alert(data.error || 'Registration failed');
+      }
+    });
+
+    function showSuccess(message) {
+      const msg = document.getElementById('successMsg');
+      msg.textContent = message;
+      msg.classList.add('visible');
+    }
+  </script>
+</body>
+</html>

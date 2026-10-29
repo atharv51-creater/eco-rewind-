@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoRewind - Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal-50: #f0f9f7;
+      --teal-100: #e0f7f1;
+      --teal-600: #0d9488;
+      --teal-700: #0f766e;
+      --gold-50: #fffbeb;
+      --gold-100: #fef3c7;
+      --gold-600: #d97706;
+      --gray-50: #f9fafb;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+      --indigo-600: #6366f1;
+      --red-500: #ef4444;
+      --green-500: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--gray-50);
+      color: var(--gray-800);
+    }
+
+    .container {
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 32px;
+    }
+
+    .header h1 {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    .header p {
+      color: var(--gray-600);
+      font-size: 14px;
+    }
+
+    .card {
+      background: white;
+      border-radius: 16px;
+      padding: 24px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+
+    .card h2 {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 20px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--gray-100);
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .form-group input {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--teal-600);
+    }
+
+    .form-group.input-error input {
+      border-color: var(--red-500);
+    }
+
+    .error-text {
+      color: var(--red-500);
+      font-size: 12px;
+      margin-top: 4px;
+      display: block;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px 20px;
+      background: var(--teal-600);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      font-family: 'Bricolage Grotesque', sans-serif;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn:focus:not(:focus-visible) { outline: none; }
+
+    .btn:focus-visible { outline: 2px solid var(--gold-600); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .links {
+      margin-top: 16px;
+      text-align: center;
+    }
+
+    .links a {
+      color: var(--teal-600);
+      text-decoration: none;
+      font-size: 14px;
+      margin: 0 4px;
+    }
+
+    .links a:hover { text-decoration: underline; }
+
+    .policy {
+      margin-top: 24px;
+      padding-top: 24px;
+      border-top: 1px solid var(--gray-200);
+      font-size: 12px;
+      color: var(--gray-500);
+      text-align: center;
+    }
+
+    .forgot {
+      margin-top: 12px;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    .forgot a {
+      color: var(--teal-600);
+      text-decoration: none;
+    }
+
+    .success-msg {
+      background: var(--gold-50);
+      border: 1px solid var(--gold-200);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .success-msg.visible { display: block; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>Welcome Back</h1>
+      <p>Log in to your EcoRewind account</p>
+    </div>
+    
+    <div class="card" id="loginFormCard">
+      <form id="loginForm">
+        <div class="form-group">
+          <label for="phone">Mobile Number</label>
+          <input type="tel" id="phone" placeholder="9876543210" pattern="[0-9]{10}" required>
+          <div class="error-text" id="phoneError">Please enter your 10-digit mobile number</div>
+        </div>
+        
+        <div class="form-group">
+          <label for="password">Password</label>
+          <input type="password" id="password" placeholder="Enter your password" required>
+          <div class="error-text" id="passwordError">Enter your password</div>
+        </div>
+        
+        <button type="submit" class="btn">Log in</button>
+      </form>
+    </div>
+    
+    <div class="success-msg" id="successMsg">
+      Logged in successfully!
+    </div>
+    
+    <div class="links">
+      <a href="/app/register.html">Create an account</a>
+    </div>
+    
+    <div class="policy">
+      By logging in, you agree to our terms and privacy policy.
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('loginForm');
+    const phoneError = document.getElementById('phoneError');
+    const passwordError = document.getElementById('passwordError');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Reset errors
+      phoneError.style.display = 'none';
+      passwordError.style.display = 'none';
+      
+      const phone = document.getElementById('phone').value.trim();
+      const password = document.getElementById('password').value.trim();
+      
+      let valid = true;
+      
+      if (!phone || !/^\d{10}$/.test(phone)) {
+        phoneError.style.display = 'block';
+        valid = false;
+      }
+      
+      if (!password) {
+        passwordError.style.display = 'block';
+        valid = false;
+      }
+      
+      if (!valid) return;
+      
+      // Send to server
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, password }),
+        credentials: 'include'
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        showSuccess('Logged in successfully!');
+        setTimeout(() => {
+          // Preserve token for claim, then go to claim page
+          const url = new URL(window.location.href);
+          const token = url.searchParams.get('token');
+          if (token) {
+            window.location.href = `/app/claim.html?token=${token}`;
+          } else {
+            window.location.href = '/app/dashboard.html';
+          }
+        }, 1500);
+      } else {
+        alert(data.error || 'Login failed. Please check your credentials.');
+      }
+    });
+
+    function showSuccess(message) {
+      const msg = document.getElementById('successMsg');
+      msg.querySelector('p').textContent = message;
+      msg.classList.add('visible');
+    }
+  </script>
+</body>
+</html>

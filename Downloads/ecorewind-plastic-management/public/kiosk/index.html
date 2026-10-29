@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EcoRewind Kiosk</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --teal-50: #f0f9f7;
+      --teal-100: #e0f7f1;
+      --teal-600: #0d9488;
+      --teal-700: #0f766e;
+      --gold-50: #fffbeb;
+      --gold-100: #fef3c7;
+      --gold-600: #d97706;
+      --gray-50: #f9fafb;
+      --gray-600: #6b7280;
+      --gray-800: #1f2937;
+      --red-500: #ef4444;
+      --red-100: #fecaca;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: var(--gray-50);
+      color: var(--gray-800);
+    }
+
+    #videoContainer {
+      width: 100%;
+      aspect-ratio: 4/3;
+      background: #000;
+      overflow: hidden;
+    }
+
+    video {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .scanner-box {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 280px;
+      height: 280px;
+      border: 4px solid var(--teal-600);
+      border-radius: 12px;
+      pointer-events: none;
+      box-shadow: 0 0 20px rgba(13, 148, 136, 0.4);
+    }
+
+    .scanner-box::after {
+      content: '';
+      position: absolute;
+      top: -4px; left: -4px; right: -4px; bottom: -4px;
+      border: 4px solid var(--teal-600);
+      border-radius: 12px;
+      z-index: -1;
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 20px rgba(13, 148, 136, 0.4); }
+      50% { box-shadow: 0 0 30px rgba(13, 148, 136, 0.8); }
+    }
+
+    .item-info {
+      position: absolute;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--teal-700);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      min-width: 160px;
+      text-align: center;
+    }
+
+    .item-info.rejected {
+      background: var(--red-500);
+    }
+
+    .weight-reading {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: var(--gold-50);
+      color: var(--gold-600);
+      padding: 8px 12px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-family: 'Bricolage Grotesque', sans-serif;
+    }
+
+    .confidence-bar {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 100px;
+      height: 8px;
+      background: var(--gray-200);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .confidence-fill {
+      height: 100%;
+      background: var(--teal-600);
+      width: 0%;
+      transition: width 0.3s;
+    }
+
+    .money-panel {
+      position: absolute;
+      bottom: 100px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: var(--gold-100);
+      color: var(--gold-600);
+      padding: 20px 30px;
+      border-radius: 16px;
+      text-align: center;
+      min-width: 200px;
+      margin-bottom: 20px;
+      border: 2px solid var(--gold-600);
+      display: none;
+    }
+
+    .money-panel .amount {
+      font-size: 24px;
+      font-weight: 700;
+      font-family: 'Bricolage Grotesque', sans-serif;
+    }
+
+    .money-panel .currency {
+      font-size: 14px;
+      margin-left: 4px;
+    }
+
+    .money-panel.empty { display: none; }
+
+    .qr-panel {
+      position: absolute;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #ffffff;
+      color: var(--gray-800);
+      padding: 16px 20px;
+      border-radius: 16px;
+      border: 1px solid var(--teal-100);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25);
+      font-size: 14px;
+      width: 320px;
+      max-width: 90vw;
+      text-align: center;
+      display: none;
+      z-index: 50;
+    }
+
+    .qr-panel.visible { display: block; animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); }
+
+    .qr-badge-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+
+    .qr-item-tag {
+      background: var(--teal-50);
+      color: var(--teal-700);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .qr-amount-tag {
+      background: var(--gold-100);
+      color: var(--gold-700);
+      padding: 3px 8px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 800;
+      font-family: 'Bricolage Grotesque', sans-serif;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(16px); }
+      to { opacity: 1; transform: translateX(-50%); }
+    }
+
+    .qr-code {
+      width: 220px;
+      height: 220px;
+      margin: 8px auto 10px;
+      background: white;
+      padding: 6px;
+      border-radius: 10px;
+      border: 1px solid var(--gray-200);
+    }
+
+    .qr-code img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .qr-instructions {
+      font-size: 12px;
+      color: var(--gray-600);
+      font-weight: 500;
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .qr-timer-box {
+      font-family: monospace;
+      font-size: 12px;
+      color: var(--teal-700);
+      font-weight: 700;
+      background: var(--gray-50);
+      padding: 4px 8px;
+      border-radius: 6px;
+      display: inline-block;
+      margin-bottom: 6px;
+    }
+
+    .qr-status-pill {
+      font-size: 11px;
+      color: var(--gray-500);
+      margin-top: 4px;
+    }
+
+    .status-animation {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(18, 55, 42, 0.95);
+      backdrop-filter: blur(8px);
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      display: none;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .status-animation.success { display: flex; animation: fadeIn 0.3s ease; }
+
+    .status-animation.expired { display: flex; background: rgba(30, 41, 59, 0.95); }
+
+    .status-animation .checkmark-circle {
+      width: 90px;
+      height: 90px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 4px solid #10b981;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 42px;
+      color: #34d399;
+      margin-bottom: 24px;
+      animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    @keyframes popIn {
+      0% { transform: scale(0.5); opacity: 0; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+
+    .status-animation .message {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #f0fdf4;
+    }
+
+    .status-animation .amount-pop {
+      font-family: 'Bricolage Grotesque', sans-serif;
+      font-size: 44px;
+      font-weight: 800;
+      color: #fde047;
+      margin-bottom: 12px;
+    }
+
+    .status-animation .details {
+      font-size: 15px;
+      color: #a7f3d0;
+      margin-bottom: 20px;
+      max-width: 320px;
+      line-height: 1.4;
+    }
+
+    .status-animation .sub-notice {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 10px;
+    }
+      font-size: 16px;
+      cursor: pointer;
+      font-family: 'Bricolage Grotesque', sans-serif;
+    }
+
+    .btn:focus:not(:focus-visible) { outline: none; }
+
+    .btn:focus-visible { outline: 2px solid var(--teal-600); }
+
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .btn.secondary {
+      background: var(--gray-200);
+      color: var(--gray-800);
+    }
+
+    .weight-control {
+      position: fixed;
+      left: 20px;
+      bottom: 20px;
+      width: 280px;
+      background: rgba(255, 255, 255, 0.96);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      z-index: 20;
+    }
+
+    .weight-control label {
+      display: block;
+      font-size: 13px;
+      color: var(--gray-600);
+      margin-bottom: 6px;
+    }
+
+    .weight-control input[type="range"] {
+      width: 100%;
+      margin-bottom: 8px;
+    }
+
+    .weight-buttons {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-bottom: 8px;
+    }
+
+    .weight-buttons button {
+      padding: 6px 8px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      background: white;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .weight-control .btn {
+      margin-top: 6px;
+      padding: 9px 12px;
+      font-size: 14px;
+    }
+
+    .no-payout {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--red-500);
+      display: none;
+    }
+
+    .no-payout.visible { display: block; }
+
+    .no-payout .message { font-size: 18px; margin-bottom: 10px; }
+
+    .no-payout .item { font-size: 14px; opacity: 0.8; }
+
+    .logo {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      width: 40px;
+      height: 40px;
+    }
+  </style>
+</head>
+<body>
+  <img src="logo.svg" alt="EcoRewind" class="logo" onerror="this.style.display='none'">
+  
+  <div class="scanner-box" id="scannerBox"></div>
+  
+  <video id="webcam" autoplay muted playsinline></video>
+  <div class="item-info" id="itemInfo">Insert item</div>
+  <div class="weight-reading" id="weightReading">0 g</div>
+  <div class="confidence-bar">
+    <div class="confidence-fill" id="confidenceFill" style="width: 0%"></div>
+  </div>
+
+  <div class="weight-control">
+    <label for="weightSlider">Load cell: <strong id="weightValue">0</strong> g</label>
+    <input id="weightSlider" type="range" min="0" max="500" step="5" value="0" />
+    <div class="weight-buttons">
+      <button type="button" data-weight="120">Bottle 120g</button>
+      <button type="button" data-weight="250">Bottle 250g</button>
+      <button type="button" data-weight="450">Can 450g</button>
+      <button type="button" data-weight="30">Bag 30g</button>
+    </div>
+    <button type="button" class="btn" id="scanBtn">Scan item</button>
+    <button type="button" class="btn secondary" id="resetBtn">Reset</button>
+  </div>
+  
+  <div class="qr-panel" id="qrPanel">
+    <div class="qr-badge-row">
+      <span class="qr-item-tag" id="qrItemBadge">Bottle 250g</span>
+      <span class="qr-amount-tag" id="qrRewardTag">₹5.00</span>
+    </div>
+    <div class="qr-code">
+      <img id="qrImage" alt="Claim QR code" width="220" height="220" />
+    </div>
+    <div class="qr-instructions">
+      📷 Point your phone camera at this QR code to claim your reward
+    </div>
+    <div>
+      <span class="qr-timer-box" id="kioskTimerBox">⏱ Expires in <span id="kioskTimerDigits">05:00</span></span>
+    </div>
+    <div class="qr-status-pill" id="qrStatusPill">Ref: <span id="kioskSessionRef">--</span> • Waiting for claim</div>
+  </div>
+
+  <div class="no-payout" id="noPayout">
+    <div class="message">No payout</div>
+    <div class="item" id="noPayoutItem">Invalid item</div>
+  </div>
+
+  <div class="status-animation" id="statusAnimation">
+    <div class="checkmark-circle">✓</div>
+    <div class="message">REWARD CLAIMED!</div>
+    <div class="amount-pop" id="popAmount">+₹5.00</div>
+    <div class="details" id="popDetails">Successfully credited to your digital wallet!</div>
+    <div class="sub-notice">Kiosk resetting for next deposit...</div>
+  </div>
+
+  <script type="module">
+    const els = {
+      video: document.getElementById('webcam'),
+      itemInfo: document.getElementById('itemInfo'),
+      weightReading: document.getElementById('weightReading'),
+      weightValue: document.getElementById('weightValue'),
+      weightSlider: document.getElementById('weightSlider'),
+      confidenceFill: document.getElementById('confidenceFill'),
+      qrPanel: document.getElementById('qrPanel'),
+      qrItemBadge: document.getElementById('qrItemBadge'),
+      qrRewardTag: document.getElementById('qrRewardTag'),
+      qrImage: document.getElementById('qrImage'),
+      kioskTimerDigits: document.getElementById('kioskTimerDigits'),
+      kioskSessionRef: document.getElementById('kioskSessionRef'),
+      qrStatusPill: document.getElementById('qrStatusPill'),
+      noPayout: document.getElementById('noPayout'),
+      statusAnimation: document.getElementById('statusAnimation'),
+      popAmount: document.getElementById('popAmount'),
+      popDetails: document.getElementById('popDetails'),
+      scanBtn: document.getElementById('scanBtn'),
+      resetBtn: document.getElementById('resetBtn'),
+    };
+
+    let scanInProgress = false;
+    let locked = false;
+    let lastScan = null;
+    let lastAutoScan = 0;
+    let claimInterval = null;
+    let countdownTimer = null;
+
+    function uuid() {
+      if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID();
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    }
+
+    function currentWeight() {
+      return parseInt(els.weightSlider.value, 10) || 0;
+    }
+
+    function resetResult() {
+      if (claimInterval) {
+        clearInterval(claimInterval);
+        claimInterval = null;
+      }
+      if (countdownTimer) {
+        clearInterval(countdownTimer);
+        countdownTimer = null;
+      }
+      locked = false;
+      lastScan = null;
+      els.qrPanel.classList.remove('visible');
+      els.statusAnimation.className = 'status-animation';
+      els.statusAnimation.style.display = 'none';
+      els.noPayout.style.display = 'none';
+      els.noPayout.classList.remove('visible');
+      els.confidenceFill.style.width = '0%';
+      els.itemInfo.textContent = 'Insert item';
+      els.itemInfo.classList.remove('rejected');
+    }
+
+    function startKioskCountdown(expiresAtStr) {
+      if (countdownTimer) clearInterval(countdownTimer);
+      const expiresAtMs = expiresAtStr
+        ? Date.parse(String(expiresAtStr).replace(' ', 'T') + (expiresAtStr.endsWith('Z') ? '' : 'Z'))
+        : Date.now() + 5 * 60 * 1000;
+
+      function tick() {
+        const remainingMs = Math.max(0, expiresAtMs - Date.now());
+        const totalSecs = Math.floor(remainingMs / 1000);
+        const mins = String(Math.floor(totalSecs / 60)).padStart(2, '0');
+        const secs = String(totalSecs % 60).padStart(2, '0');
+        if (els.kioskTimerDigits) {
+          els.kioskTimerDigits.textContent = `${mins}:${secs}`;
+        }
+        if (remainingMs <= 0) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+          if (els.qrStatusPill) {
+            els.qrStatusPill.textContent = 'QR Expired — Item will be returned';
+            els.qrStatusPill.style.color = 'var(--red-500)';
+          }
+          if (claimInterval) {
+            clearInterval(claimInterval);
+            claimInterval = null;
+          }
+          setTimeout(() => setWeight(0), 3000);
+        }
+      }
+
+      tick();
+      countdownTimer = setInterval(tick, 1000);
+    }
+
+    function setWeight(grams) {
+      els.weightSlider.value = String(grams);
+      els.weightValue.textContent = String(grams);
+      els.weightReading.textContent = `${grams} g`;
+      resetResult();
+    }
+
+    els.weightSlider.addEventListener('input', () => setWeight(currentWeight()));
+    document.querySelectorAll('.weight-buttons button').forEach((btn) => {
+      btn.addEventListener('click', () => setWeight(parseInt(btn.dataset.weight, 10) || 0));
+    });
+    els.scanBtn.addEventListener('click', () => scanNow(true));
+    els.resetBtn.addEventListener('click', () => setWeight(0));
+
+    navigator.mediaDevices
+      ?.getUserMedia({ video: { facingMode: 'environment', width: 1280, height: 720 } })
+      .then((stream) => {
+        els.video.srcObject = stream;
+      })
+      .catch((err) => {
+        console.error('Webcam error:', err);
+        els.video.style.display = 'none';
+      });
+
+    function captureFrame() {
+      if (!els.video.videoWidth) return null;
+      const canvas = document.createElement('canvas');
+      canvas.width = els.video.videoWidth;
+      canvas.height = els.video.videoHeight;
+      canvas.getContext('2d').drawImage(els.video, 0, 0);
+      return canvas.toDataURL('image/jpeg', 0.85);
+    }
+
+    function dataUrlToBlob(dataUrl) {
+      const [meta, b64] = dataUrl.split(',');
+      const mime = (meta.match(/data:([^;]+)/) || [])[1] || 'image/jpeg';
+      const bin = atob(b64);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i += 1) bytes[i] = bin.charCodeAt(i);
+      return new Blob([bytes], { type: mime });
+    }
+
+    function showNoPayout(reason) {
+      els.qrPanel.classList.remove('visible');
+      els.itemInfo.textContent = `No payout — ${reason}`;
+      els.itemInfo.classList.add('rejected');
+      els.noPayout.style.display = 'block';
+      els.noPayout.classList.add('visible');
+      els.noPayout.querySelector('.item').textContent = reason;
+    }
+
+    async function scanNow(manual = false) {
+      if (scanInProgress || (!manual && locked)) return;
+      const weight = currentWeight();
+      if (weight <= 0) {
+        if (manual) showNoPayout('Place an item on the load cell first');
+        return;
+      }
+
+      const frame = captureFrame();
+      if (!frame) {
+        if (manual) showNoPayout('Camera unavailable');
+        return;
+      }
+
+      scanInProgress = true;
+      els.scanBtn.disabled = true;
+      try {
+        const formData = new FormData();
+        formData.append('image', dataUrlToBlob(frame), 'frame.jpg');
+        formData.append('weight_grams', String(weight));
+        formData.append('machine_id', 'RVM-01');
+        formData.append('user_id', 'anonymous');
+
+        const res = await fetch('/api/scan', {
+          method: 'POST',
+          headers: { 'Idempotency-Key': uuid() },
+          body: formData,
+          credentials: 'omit',
+        });
+        const data = await res.json();
+        handleScanResult(data);
+      } catch (err) {
+        console.error('Scan failed:', err);
+        showNoPayout('Scanner unavailable');
+      } finally {
+        scanInProgress = false;
+        els.scanBtn.disabled = false;
+      }
+    }
+
+    function handleScanResult(data) {
+      els.confidenceFill.style.width = `${Math.round((data.confidence || 0) * 100)}%`;
+
+      if (data.status === 'rejected' || data.decision === 'rejected') {
+        showNoPayout(data.reason || 'Invalid item');
+        locked = true;
+        return;
+      }
+
+      const itemType = data.itemType || data.label;
+      const labels = {
+        plastic_bottle: 'Plastic bottle',
+        aluminium_can: 'Aluminium can',
+        plastic_bag: 'Plastic bag',
+      };
+      const grams = data.weightGrams ?? currentWeight();
+      const payout = data.amountPaise || 0;
+      const formattedRupees = (payout / 100).toLocaleString('en-IN', {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      });
+
+      els.itemInfo.textContent = `${labels[itemType] || itemType}, ${grams} g`;
+      els.itemInfo.classList.remove('rejected');
+
+      if (data.token) {
+        const claimUrl = data.claimUrl
+          ? new URL(data.claimUrl, location.origin).toString()
+          : `${location.origin}/app/claim/${data.token}`;
+
+        els.qrItemBadge.textContent = `${labels[itemType] || itemType} • ${grams}g`;
+        els.qrRewardTag.textContent = `₹${formattedRupees}`;
+        els.kioskSessionRef.textContent = (data.sessionId || data.scan_id || '').slice(0, 8);
+        els.qrStatusPill.textContent = `Ref: ${(data.sessionId || data.scan_id || '').slice(0, 8)} • Waiting for phone scan...`;
+        els.qrStatusPill.style.color = 'var(--gray-500)';
+
+        els.qrImage.src = `/api/qr?text=${encodeURIComponent(claimUrl)}`;
+        els.qrImage.style.display = 'block';
+        els.qrPanel.classList.add('visible');
+
+        startKioskCountdown(data.expiresAt);
+        startClaimPolling(data.sessionId, payout);
+      } else {
+        els.qrPanel.classList.remove('visible');
+        els.itemInfo.textContent = `+₹${formattedRupees} Credited to wallet`;
+      }
+
+      locked = true;
+    }
+
+    function startClaimPolling(sessionId, payout) {
+      if (claimInterval) clearInterval(claimInterval);
+      if (!sessionId) return;
+      claimInterval = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/deposit/${encodeURIComponent(sessionId)}/status`, {
+            credentials: 'omit',
+          });
+          if (!res.ok) return;
+          const status = await res.json();
+          if (status.status === 'claimed') {
+            clearInterval(claimInterval);
+            claimInterval = null;
+            if (countdownTimer) {
+              clearInterval(countdownTimer);
+              countdownTimer = null;
+            }
+            els.qrPanel.classList.remove('visible');
+
+            // Show Celebration Overlay
+            els.popAmount.textContent = `+ ₹${(payout / 100).toFixed(2)}`;
+            els.popDetails.textContent = status.claimerInfo
+              ? `Successfully credited to ${status.claimerInfo}!`
+              : 'Successfully credited to your digital rewards wallet!';
+            els.statusAnimation.style.display = 'flex';
+            els.statusAnimation.className = 'status-animation success';
+
+            setTimeout(() => {
+              els.statusAnimation.style.display = 'none';
+              els.statusAnimation.className = 'status-animation';
+              setWeight(0);
+            }, 3500);
+          } else if (status.status === 'expired') {
+            clearInterval(claimInterval);
+            claimInterval = null;
+            if (countdownTimer) {
+              clearInterval(countdownTimer);
+              countdownTimer = null;
+            }
+            els.qrPanel.classList.remove('visible');
+            setTimeout(() => setWeight(0), 3000);
+          }
+        } catch {
+          // ignore transient polling errors
+        }
+      }, 1500);
+    }
+
+    // Auto-scan at most once every 3 seconds while an item is on the load cell.
+    setInterval(() => {
+      if (scanInProgress || locked) return;
+      if (currentWeight() <= 0) return;
+      const now = Date.now();
+      if (now - lastAutoScan < 3000) return;
+      lastAutoScan = now;
+      scanNow(false);
+    }, 500);
+  </script>
+</body>
+</html>
